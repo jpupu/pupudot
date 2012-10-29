@@ -1,0 +1,115 @@
+set nocompatible
+
+" Indenting / formatting
+set autoindent
+set smartindent
+set tabstop=4
+set shiftwidth=4
+set expandtab       " use spaces
+set smarttab        " delete spaces as tabs
+set cino=l1,g0,t0,(0,u0,Ws,m1,j1
+
+
+" Syntax
+syntax on
+let python_highlight_all = 1
+au FileType python syn keyword pythonDecorator True None False self
+
+" Searching
+set hls         " highlight searches
+set incsearch   " incremental search
+set ignorecase  " ignore case
+set smartcase   " ...unless needle contains uppercase chars
+set infercase   " smarter completion
+
+
+" UI
+set ruler       " show current position in statusline
+"set cursorline  " highlight current line
+set list        " show tabs and trailing spaces
+set listchars=tab:»\ ,trail:␣
+set number      " show line numbers
+set scrolloff=10   " keep 10 lines (top/bottom) for scope
+set showmatch   " show matching brackets
+
+
+" Misc
+set wildmode=list:longest,full
+set backspace=indent,eol,start
+filetype indent plugin on   " load filetype plugins/indent settings
+set history=300
+set nobackup
+" Change to directory of current file automagically
+autocmd BufEnter * lcd %:p:h
+" Write those pesky config files
+command Sudow w !sudo tee % >/dev/null
+" Enable left-right movement in SQL files.
+let g:omni_sql_no_default_maps = 1
+
+" GUI
+if has("gui_running")
+    set background=light
+    colorscheme autumnleaf
+"    let g:solarized_termcolors = 256
+"    let g:solarized_contrast = "high"
+"    colorscheme solarized
+    if MySys() == "windows"
+        set guifont=DejaVu_Sans_Mono:h10
+    else
+"         set guifont=DejaVu\ Sans\ Mono\ 10
+        set guifont=Inconsolata\ 14
+    endif
+else
+"    set background=dark
+"    colorscheme wombat256
+    set background=light
+    colorscheme pyte
+endif
+
+
+" Block commenting
+function! CommentLeader()
+    if &filetype =~ 'cpp\|c\|java\|qml\|css\|groovy'
+        return '// '
+    elseif &filetype =~ 'vim'
+        return '" '
+    elseif &filetype =~ 'tex\|plaintex'
+        return '% '
+    elseif &filetype =~ 'haskell\|vhdl\|ada\|sql'
+        return '-- '
+    elseif &filetype =~ 'asm'
+        return '@ '
+    else
+        return '# '
+    endif
+endfunction
+noremap <silent> ,, :<C-B>sil <C-E>s/^/<C-R>=escape(CommentLeader(),'\/')<CR>/<CR>:noh<CR>
+noremap <silent> ,. :<C-B>sil <C-E>s/^\V<C-R>=escape(CommentLeader(),'\/')<CR>//e<CR>:noh<CR>
+
+" Taglist
+nnoremap <silent> <F8> :TlistToggle<CR>
+
+" C/C++ stuff
+" Automatically insert header gates
+function! s:insert_gates()
+  let gatename = substitute(toupper(expand("%:t")), "\\.", "_", "g")
+  execute "normal! i#ifndef " . gatename
+  execute "normal! o#define " . gatename
+  execute "normal! o"
+  execute "normal! o"
+  execute "normal! Go#endif /* " . gatename . " */"
+  normal! kk
+endfunction
+autocmd BufNewFile *.{h,hpp} call <SID>insert_gates()
+
+" Load matchit.vim, required by matlab indent script.
+:runtime macros/matchit.vim
+
+" Show syntax highlighting groups for word under cursor
+nmap <C-S-P> :call <SID>SynStack()<CR>
+function! <SID>SynStack()
+  if !exists("*synstack")
+    return
+  endif
+  echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
+endfunc
